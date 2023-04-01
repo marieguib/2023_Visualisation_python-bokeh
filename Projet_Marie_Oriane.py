@@ -1,7 +1,8 @@
 import pandas as pd
 from bokeh.plotting import figure,show
-from bokeh.models import ColumnDataSource,  ColorPicker, CustomJS, NumeralTickFormatter
+from bokeh.models import ColumnDataSource, ColorPicker, CustomJS, NumeralTickFormatter,CategoricalColorMapper
 from bokeh.layouts import row, column
+from bokeh.palettes import Spectral
 
 ################# Importations des bases de données ---
 pd.set_option("display.max_columns",19) # pour afficher tout 
@@ -12,30 +13,35 @@ df_croisieres = df_croisieres.rename(columns = {"Code du port":"Code_port","Nom 
 # print(df_croisieres.describe())
 
 df_ferries = pd.read_csv('trafic-ferries-region-bretagne.csv', sep=';', parse_dates=['Date'])
-print(df_ferries.head())
-print(df_ferries.describe())
+# print(df_ferries.head())
+# print(df_ferries.describe())
 
 
 ################ Modifications des bases de données ---
 
 ###### Modification croisiere
-# On ne retient que l'année de la colonne Date pour pouvoir ensuite grouper par année
-# df_croisieres['Date'].to_period('A')
-# df_croisieres = df_croisieres.groupby("Port","Date")
+# On créé la colonne Annee afin de pouvoir grouper les données
+df_croisieres["Date"] = pd.to_datetime(df_croisieres["Date"]).dt.year
 # print(df_croisieres.head())
+# On groupe par port et par année et on somme le nombre de passagers pour réaliser le graphique
+df_croisieres = df_croisieres.groupby(["Port","Date"],as_index=False)
+df_croisieres = df_croisieres.agg({"Nb_passagers":sum})
+print(df_croisieres)
+
+# Créer une source de données pour le graphique
+source_croisieres = ColumnDataSource(df_croisieres)
 
 ###### Modification feries
-# Trie de la date
+# Tri de la date
 df = df_ferries.sort_values('Date')
 # Créer des sources de données pour Roscoff et Saint-Malo
 source_roscoff = ColumnDataSource(df[df['Nom du port'] == 'ROSCOFF'])
 source_saint_malo = ColumnDataSource(df[df['Nom du port'] == 'SAINT-MALO'])
 
-
 # Créer une source de données pour le graphique
 source = ColumnDataSource(df)
 
-##################### Widgets 
+##################### Widgets ---
 # Créer des widgets colorPickers pour chaque courbe
 colorpicker_roscoff = ColorPicker(title='Couleur de la courbe Roscoff', color='blue')
 colorpicker_saint_malo = ColorPicker(title='Couleur de la courbe Saint-Malo', color='red')
@@ -46,9 +52,13 @@ colorpicker_saint_malo = ColorPicker(title='Couleur de la courbe Saint-Malo', co
 ###################### Graphiques ---
 
 #####  Graphique Marie 
-#g_crois = figure(title = "Répartition du nombre de passagers dans les croisières en Bretagne")
-# g_crois.vbar(df_croisieres["Nb_passagers"],fill_alpha = df_croisieres["Port"],width = 0.5)
-# show(g_crois)
+ports = df_croisieres["Port"].unique()
+palette_couleurs = CategoricalColorMapper(factors=ports, palette=Spectral[3])
+g_crois = figure(title = "Répartition du nombre de passagers dans les croisières en Bretagne",
+                 y_axis_label='Nombre de passagers')
+g_crois.vbar(x = "Date",top = "Nb_passagers",fill_color = {'field': 'Port', 'transform': palette_couleurs},source = source_croisieres,
+             width = 0.5, legend_field = "Port")
+show(g_crois)
 
 
 #### Graphique Oriane 
