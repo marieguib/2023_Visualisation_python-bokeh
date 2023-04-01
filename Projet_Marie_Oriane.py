@@ -1,7 +1,7 @@
 import pandas as pd
 from bokeh.plotting import figure,show
-from bokeh.models import ColumnDataSource
-
+from bokeh.models import ColumnDataSource,  ColorPicker, CustomJS, NumeralTickFormatter
+from bokeh.layouts import row, column
 
 ################# Importations des bases de données ---
 pd.set_option("display.max_columns",19) # pour afficher tout 
@@ -11,7 +11,7 @@ df_croisieres = df_croisieres.rename(columns = {"Code du port":"Code_port","Nom 
 # print(df_croisieres.head())
 # print(df_croisieres.describe())
 
-df_ferries = pd.read_csv('trafic-ferries-region-bretagne.csv', sep=';')
+df_ferries = pd.read_csv('trafic-ferries-region-bretagne.csv', sep=';', parse_dates=['Date'])
 print(df_ferries.head())
 print(df_ferries.describe())
 
@@ -25,19 +25,24 @@ print(df_ferries.describe())
 # print(df_croisieres.head())
 
 ###### Modification feries
-
-# Filtrer les données pour ne garder que les ports de Roscoff et Saint-Malo
-df_ferries = df_ferries[df_ferries['Nom du port'].isin(['ROSCOFF', 'SAINT-MALO'])]
-
-# Créer une source de données pour Roscoff
-source_roscoff = ColumnDataSource(df_ferries[df_ferries['Nom du port'] == 'ROSCOFF'].groupby(['Date'])['Nombre de passagers'].sum().reset_index())
-
-# Créer une source de données pour Saint-Malo
-source_saintmalo = ColumnDataSource(df_ferries[df_ferries['Nom du port'] == 'SAINT-MALO'].groupby(['Date'])['Nombre de passagers'].sum().reset_index())
+# Trie de la date
+df = df_ferries.sort_values('Date')
+# Créer des sources de données pour Roscoff et Saint-Malo
+source_roscoff = ColumnDataSource(df[df['Nom du port'] == 'ROSCOFF'])
+source_saint_malo = ColumnDataSource(df[df['Nom du port'] == 'SAINT-MALO'])
 
 
+# Créer une source de données pour le graphique
+source = ColumnDataSource(df)
 
-print(source_roscoff)
+##################### Widgets 
+# Créer des widgets colorPickers pour chaque courbe
+colorpicker_roscoff = ColorPicker(title='Couleur de la courbe Roscoff', color='blue')
+colorpicker_saint_malo = ColorPicker(title='Couleur de la courbe Saint-Malo', color='red')
+
+
+
+
 ###################### Graphiques ---
 
 #####  Graphique Marie 
@@ -47,19 +52,35 @@ print(source_roscoff)
 
 
 #### Graphique Oriane 
-# Créer un graphique 
-# Créer un graphique en utilisant Bokeh
-p = figure(title='Somme des passagers pour les ports de Roscoff et Saint-Malo', x_axis_label='Date', y_axis_label='Nombre de passagers')
+# Créer une figure
+p = figure(title='Trafic des ferries en Bretagne', x_axis_type='datetime')
 
-# Tracer les courbes
-p.line(x='Date', y='Nombre de passagers', source=source_roscoff, line_width=2, color='blue', legend_label='Roscoff')
-#p.line(x='Date', y='Nombre de passagers', source=source_saint_malo, line_width=2, color='red', legend_label='Saint-Malo')
+# Ajouter les courbes
+p_roscoff = p.line(x='Date', y='Nombre de passagers', source=source_roscoff, legend_label='Roscoff', color=colorpicker_roscoff.color, line_width=2, line_alpha=0.8)
+p_saint_malo = p.line(x='Date', y='Nombre de passagers', source=source_saint_malo, legend_label='Saint-Malo', color=colorpicker_saint_malo.color, line_width=2, line_alpha=0.8)
 
-# Afficher la légende
-p.legend.location = "top_left"
+# Configuration de l'axe des ordonnées
+p.yaxis.formatter = NumeralTickFormatter(format='0,0')
 
-# Afficher le graphique
-show(p)
+# Créer une fonction de callback pour mettre à jour la couleur de la courbe Roscoff
+callback_roscoff = CustomJS(args=dict(p=p_roscoff, colorpicker=colorpicker_roscoff), code="""
+    p.glyph.line_color = colorpicker.color;
+""")
 
+# Créer une fonction de callback pour mettre à jour la couleur de la courbe Saint-Malo
+callback_saint_malo = CustomJS(args=dict(p=p_saint_malo, colorpicker=colorpicker_saint_malo), code="""
+    p.glyph.line_color = colorpicker.color;
+""")
+
+# Ajouter les callbacks aux widgets colorPickers
+colorpicker_roscoff.js_on_change('color', callback_roscoff)
+colorpicker_saint_malo.js_on_change('color', callback_saint_malo)
+
+# Modifier l'apparence du graphique
+p.legend.location = 'top_left'
+p.legend.click_policy = 'mute'
+
+# Afficher le graphique et les widgets colorPickers
+show(row(p, column(colorpicker_roscoff, colorpicker_saint_malo)))
 
 
