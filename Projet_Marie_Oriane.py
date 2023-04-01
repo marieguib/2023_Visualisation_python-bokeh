@@ -18,4 +18,3 @@ df_croisieres = df_croisieres.rename(columns = {"Code du port":"Code_port","Nom 
 g_crois = figure(title = "Répartition du nombre de passagers dans les croisières en Bretagne")
 # g_crois.vbar(df_croisieres["Nb_passagers"],fill_alpha = df_croisieres["Port"],width = 0.5)
 # show(g_crois)
-
