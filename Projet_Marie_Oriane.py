@@ -1,8 +1,16 @@
 import pandas as pd
 from bokeh.plotting import figure,show
 from bokeh.models import ColumnDataSource, ColorPicker, CustomJS, NumeralTickFormatter,CategoricalColorMapper
+from bokeh.models import TabPanel, Tabs, Div
 from bokeh.layouts import row, column
 from bokeh.palettes import Spectral
+
+
+#################  Présentation de notre projet ---
+pres = Div(text = """
+<h1> Présentation de notre projet </h1>
+<p> Ce cours a pour but de montrer comment intégrer du code html</p>
+<a href="http://www.univ-rennes2.fr ">Un lien vers le site de l'Université</a>""")
 
 ################# Importations des bases de données ---
 pd.set_option("display.max_columns",19) # pour afficher tout 
@@ -58,8 +66,7 @@ g_crois = figure(title = "Répartition du nombre de passagers dans les croisièr
                  y_axis_label='Nombre de passagers')
 g_crois.vbar(x = "Date",top = "Nb_passagers",fill_color = {'field': 'Port', 'transform': palette_couleurs},source = source_croisieres,
              width = 0.5, legend_field = "Port")
-show(g_crois)
-
+# show(g_crois)
 
 #### Graphique Oriane 
 # Créer une figure
@@ -91,6 +98,15 @@ p.legend.location = 'top_left'
 p.legend.click_policy = 'mute'
 
 # Afficher le graphique et les widgets colorPickers
-show(row(p, column(colorpicker_roscoff, colorpicker_saint_malo)))
+# show(row(p, column(colorpicker_roscoff, colorpicker_saint_malo)))
 
 
+
+
+#################  Création des onglets ---
+
+tab1 = TabPanel(child = pres,title = "Présentation")
+tab2 = TabPanel(child=g_crois, title="Croisières")
+tab3 = TabPanel(child=row(p,column(colorpicker_roscoff, colorpicker_saint_malo)), title="Ferries")
+tabs = Tabs(tabs= [tab1,tab2,tab3])
+show(tabs)
