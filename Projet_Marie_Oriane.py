@@ -1,10 +1,38 @@
 import pandas as pd
+from pandas import DataFrame
+import numpy as np
+import json
 from bokeh.plotting import figure,show
-from bokeh.models import ColumnDataSource, ColorPicker, CustomJS, NumeralTickFormatter,CategoricalColorMapper
+from bokeh.models import ColumnDataSource, Spinner, ColorPicker, CustomJS, NumeralTickFormatter,CategoricalColorMapper,HoverTool
 from bokeh.models import TabPanel, Tabs, Div
 from bokeh.layouts import row, column
 from bokeh.palettes import Spectral
 
+################# Fonctions ---
+
+def coor_wgs84_to_web_mercator(lon, lat):
+    k = 6378137
+    x = lon * (k * np.pi/180.0)
+    y = np.log(np.tan((90 + lat) * np.pi/360.0)) * k
+    return (x,y)
+
+def analyse_cites(data):
+    #Construction d'un dataframe : une colonne commune, une colonne code insee, une colonne coordonnéees
+    commune = []
+    code_insee = []
+    coordsx = []  # Pour chaque zone, liste des coordonnées x de la polyligne
+    coordsy = []  # Pour chaque zone, liste des coordonnées y de la polyligne
+
+    for cite in data :
+        commune.append(cite["nom"])
+        code_insee.append(cite["code_insee"])
+        coords = cite["geo_point_2d"]
+        x,y = coor_wgs84_to_web_mercator(coords["lon"],coords["lat"])
+        coordsx.append(x)
+        coordsy.append(y)
+    
+    df = DataFrame({'Commune': commune, 'Code Insee': code_insee, 'x':coordsx,'y':coordsy})
+    return df   
 
 #################  Présentation de notre projet ---
 pres = Div(text = """
@@ -24,6 +52,14 @@ df_ferries = pd.read_csv('trafic-ferries-region-bretagne.csv', sep=';', parse_da
 # print(df_ferries.head())
 # print(df_ferries.describe())
 
+with open("petites-cites-de-caractere-en-bretagne.json","r",encoding='utf-8') as jsonfile :
+    data_cites = json.load(jsonfile)
+
+df_cites = analyse_cites(data_cites)
+# print(df_cites)
+# print(df_cites.head())
+# print(df_cites.describe())
+
 
 ################ Modifications des bases de données ---
 
@@ -39,7 +75,9 @@ print(df_croisieres)
 # Créer une source de données pour le graphique
 source_croisieres = ColumnDataSource(df_croisieres)
 
-###### Modification feries
+
+
+###### Modification ferries
 # Tri de la date
 df = df_ferries.sort_values('Date')
 # Créer des sources de données pour Roscoff et Saint-Malo
@@ -49,26 +87,36 @@ source_saint_malo = ColumnDataSource(df[df['Nom du port'] == 'SAINT-MALO'])
 # Créer une source de données pour le graphique
 source = ColumnDataSource(df)
 
+
+###### Modification cites
+source_cites = ColumnDataSource(df_cites)
+# print(source.column_names)
+
+
 ##################### Widgets ---
+# Graphique croisieres
 # Créer des widgets colorPickers pour chaque courbe
 colorpicker_roscoff = ColorPicker(title='Couleur de la courbe Roscoff', color='blue')
 colorpicker_saint_malo = ColorPicker(title='Couleur de la courbe Saint-Malo', color='red')
 
-
+# Carte des cites de caractère
+hover_tool = HoverTool(tooltips=[('Commune', '@Commune')])
+# trouver une image à ajouter quand on survole 
+# lien de la ville à ajouter quand on survole
 
 
 ###################### Graphiques ---
 
-#####  Graphique Marie 
+#####  Graphique ferries
 ports = df_croisieres["Port"].unique()
 palette_couleurs = CategoricalColorMapper(factors=ports, palette=Spectral[3])
 g_crois = figure(title = "Répartition du nombre de passagers dans les croisières en Bretagne",
                  y_axis_label='Nombre de passagers')
-g_crois.vbar(x = "Date",top = "Nb_passagers",fill_color = {'field': 'Port', 'transform': palette_couleurs},source = source_croisieres,
+g_crois.vbar(x = "Date",top = "Nb_passagers",fill_color = {'field': 'Port', 'transform': palette_couleurs}, line_color = None, source = source_croisieres,
              width = 0.5, legend_field = "Port")
 # show(g_crois)
 
-#### Graphique Oriane 
+#### Graphique croisieres 
 # Créer une figure
 p = figure(title='Trafic des ferries en Bretagne', x_axis_type='datetime')
 
@@ -100,7 +148,19 @@ p.legend.click_policy = 'mute'
 # Afficher le graphique et les widgets colorPickers
 # show(row(p, column(colorpicker_roscoff, colorpicker_saint_malo)))
 
+#### Carte petites cités de caractères 
+carte_cites = figure(x_axis_type="mercator", y_axis_type="mercator", title="Petites cités de caractère en Bretagne")
+carte_cites.add_tile("CartoDB Positron")
+points = carte_cites.circle("x","y",source=source_cites,line_color = None,fill_color='purple',size=10,alpha=0.5)
+carte_cites.add_tools(hover_tool)
 
+picker_cites = ColorPicker(title="Couleur de ligne",color=points.glyph.fill_color) 
+spinner_cites = Spinner(title="Taille des cercles", low=0,high=60, step=5, value=points.glyph.size)
+picker_cites.js_link('color', points.glyph, 'fill_color')
+spinner_cites.js_link("value", points.glyph, "size") 
+
+layout_cites = row(carte_cites, column(picker_cites,spinner_cites))
+# show(layout)
 
 
 #################  Création des onglets ---
@@ -108,5 +168,6 @@ p.legend.click_policy = 'mute'
 tab1 = TabPanel(child = pres,title = "Présentation")
 tab2 = TabPanel(child=g_crois, title="Croisières")
 tab3 = TabPanel(child=row(p,column(colorpicker_roscoff, colorpicker_saint_malo)), title="Ferries")
-tabs = Tabs(tabs= [tab1,tab2,tab3])
+tab4 = TabPanel(child = layout_cites, title = "Cités de caractère")
+tabs = Tabs(tabs= [tab1,tab2,tab3,tab4])
 show(tabs)
