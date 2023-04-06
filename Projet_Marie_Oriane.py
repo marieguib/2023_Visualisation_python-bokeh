@@ -6,7 +6,8 @@ from bokeh.plotting import figure,show
 from bokeh.models import ColumnDataSource, Spinner, ColorPicker, CustomJS, NumeralTickFormatter,CategoricalColorMapper,HoverTool
 from bokeh.models import TabPanel, Tabs, Div
 from bokeh.layouts import row, column
-from bokeh.palettes import Spectral
+from bokeh.palettes import Spectral,Category20
+from bokeh.transform import factor_cmap
 
 ################# Fonctions ---
 
@@ -34,6 +35,28 @@ def analyse_cites(data):
     df = DataFrame({'Commune': commune, 'Code Insee': code_insee, 'x':coordsx,'y':coordsy})
     return df   
 
+def analyse_fete(data):
+    #Construction d'un dataframe : une colonne denomination, une colonne tarif, une colonne coordonnéees
+    lieu = []
+    tarif = []
+    type = []
+    coordsx = []  # Pour chaque zone, liste des coordonnées x de la polyligne
+    coordsy = []  # Pour chaque zone, liste des coordonnées y de la polyligne
+
+
+    for manif in data:
+        lieu.append(manif["detailidentadressecommune"])
+        tarif.append(manif["tarifentree"])
+        type.append(manif['syndicobjectname'])
+        x, y = coor_wgs84_to_web_mercator(manif["point_geo"]['lon'],manif["point_geo"]['lat'])
+        coordsx.append(x)
+        coordsy.append(y)
+    
+
+    df = DataFrame({ 'lieu': lieu, 'tarif': tarif,'type': type,'x': coordsx, 'y': coordsy})
+    return df
+
+
 #################  Présentation de notre projet ---
 pres = Div(text = """
 <h1> Présentation de notre projet </h1>
@@ -43,15 +66,20 @@ pres = Div(text = """
 ################# Importations des bases de données ---
 pd.set_option("display.max_columns",19) # pour afficher tout 
 
+### Importation base de donnée croissière
 df_croisieres = pd.read_csv("trafic-croisieres-region-bretagne.csv",sep=";")
 df_croisieres = df_croisieres.rename(columns = {"Code du port":"Code_port","Nom du port":"Port","Nombre de passagers":"Nb_passagers"})
 # print(df_croisieres.head())
 # print(df_croisieres.describe())
 
+
+### Importation base de donnée ferries
 df_ferries = pd.read_csv('trafic-ferries-region-bretagne.csv', sep=';', parse_dates=['Date'])
 # print(df_ferries.head())
 # print(df_ferries.describe())
 
+
+### Importation base de donnée petites cités de caractère
 with open("petites-cites-de-caractere-en-bretagne.json","r",encoding='utf-8') as jsonfile :
     data_cites = json.load(jsonfile)
 
@@ -60,6 +88,16 @@ df_cites = analyse_cites(data_cites)
 # print(df_cites.head())
 # print(df_cites.describe())
 
+### Importation base de donnée fetes et manifestation 
+
+with open('bretagne-fetes-et-manifestations.json') as mon_fichier:
+    data_fete = json.load(mon_fichier)    
+
+df_fete = analyse_fete(data_fete)
+# print(df_fete)
+
+# print(df_fete.describe())
+# print(df_fete.head())
 
 ################ Modifications des bases de données ---
 
@@ -91,6 +129,13 @@ source = ColumnDataSource(df)
 ###### Modification cites
 source_cites = ColumnDataSource(df_cites)
 # print(source.column_names)
+
+###### Modification fetes 
+#print(df_fete.columns)
+#print(df_fete['tarif'].unique())
+type_tarif = ['Tarifs non communiqués', 'Payant', 'Gratuit', 'Libre participation']
+
+source_fete = ColumnDataSource(df_fete)
 
 
 ##################### Widgets ---
@@ -144,6 +189,15 @@ colorpicker_saint_malo.js_on_change('color', callback_saint_malo)
 # Modifier l'apparence du graphique
 p.legend.location = 'top_left'
 p.legend.click_policy = 'mute'
+p.legend.title = ' 2 Ports'
+p.legend.label_text_font = "arial"
+p.legend.label_text_font_style = "italic"
+p.legend.label_text_color = "white"
+p.legend.border_line_width = 2
+p.legend.border_line_color = "red" 
+p.legend.border_line_alpha = 0.8
+p.legend.background_fill_color = "red"
+p.legend.background_fill_alpha = 0.2
 
 # Afficher le graphique et les widgets colorPickers
 # show(row(p, column(colorpicker_roscoff, colorpicker_saint_malo)))
@@ -162,6 +216,22 @@ spinner_cites.js_link("value", points.glyph, "size")
 layout_cites = row(carte_cites, column(picker_cites,spinner_cites))
 # show(layout)
 
+### Carte fete et manif 
+
+carte_fete = figure(x_axis_type="mercator", y_axis_type="mercator", title="Lieux de manifestations et de fêtes")
+carte_fete.add_tile("CartoDB Positron")
+carte_fete.circle("x","y",source=source_fete,color=factor_cmap('tarif', palette=Category20[len(type_tarif)], factors=type_tarif),size=8, alpha = 0.5)
+
+# Ajout des informations de survol pour les icônes de fête
+hover_fete = HoverTool(
+    tooltips=[('Lieu', '@lieu'), ('Tarif', '@tarif'), ('Type', '@type')],
+    mode='mouse'
+)
+carte_fete.add_tools(hover_fete)
+
+
+# Affichage de la carte
+#show(carte_fete)
 
 #################  Création des onglets ---
 
@@ -169,5 +239,7 @@ tab1 = TabPanel(child = pres,title = "Présentation")
 tab2 = TabPanel(child=g_crois, title="Croisières")
 tab3 = TabPanel(child=row(p,column(colorpicker_roscoff, colorpicker_saint_malo)), title="Ferries")
 tab4 = TabPanel(child = layout_cites, title = "Cités de caractère")
-tabs = Tabs(tabs= [tab1,tab2,tab3,tab4])
+tab5 = TabPanel(child = carte_fete, title = "Fetes et manifestation")
+
+tabs = Tabs(tabs= [tab1,tab2,tab3,tab4,tab5])
 show(tabs)
