@@ -8,6 +8,8 @@ from bokeh.models import TabPanel, Tabs, Div
 from bokeh.layouts import row, column
 from bokeh.palettes import Spectral,Category20
 from bokeh.transform import factor_cmap
+from bokeh.themes import Theme
+from bokeh.io import curdoc
 
 ################# Fonctions ---
 
@@ -55,9 +57,46 @@ def analyse_fete(data):
 
     df = DataFrame({ 'lieu': lieu, 'tarif': tarif,'type': type,'x': coordsx, 'y': coordsy})
     return df
+#################  Création du thème du projet ---
+
+theme_projet = Theme(
+    json={
+        'attrs': {
+            'Figure': {
+                'background_fill_color': '#2F2F2F',
+                'border_fill_color': '#2F2F2F',
+                'outline_line_color': '#444444',
+            },
+            'Grid': {
+                'grid_line_dash': [6, 4],
+                'grid_line_alpha': .3,
+            },
+            'Axis': {
+                'axis_line_color': "white",
+                'major_tick_line_color': "white",
+                'minor_tick_line_color': "white",
+                'major_label_text_color': "white",
+                'minor_label_text_color': "white",
+            },
+            'Legend': {
+                'background_fill_color': '#2F2F2F',
+                'border_line_color': '#444444',
+                'label_text_color': "white",
+                'glyph_height': 20,
+                'spacing': 5,
+                'glyph_width': 20,
+                'label_text_font_size': '12pt',
+                'border_line_width': 1,
+            }
+        }
+    }
+)
 
 
+
+curdoc().theme = theme_projet
 #################  Présentation de notre projet ---
+
 pres = Div(text = """
 <h1> Présentation de notre projet </h1>
 <p> Ce cours a pour but de montrer comment intégrer du code html</p>
