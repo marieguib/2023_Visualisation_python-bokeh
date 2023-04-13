@@ -4,9 +4,9 @@ import numpy as np
 import json
 from bokeh.plotting import figure,show
 from bokeh.models import ColumnDataSource, Spinner, ColorPicker, CustomJS, NumeralTickFormatter,CategoricalColorMapper,HoverTool
-from bokeh.models import TabPanel, Tabs, Div
-from bokeh.layouts import row, column
-from bokeh.palettes import Spectral,Category20
+from bokeh.models import TabPanel, Tabs, Div,DataTable,TableColumn
+from bokeh.layouts import row, column,Column
+from bokeh.palettes import Category20b,Category20
 from bokeh.transform import factor_cmap
 from bokeh.themes import Theme
 from bokeh.io import curdoc
@@ -62,45 +62,72 @@ def analyse_fete(data):
 theme_projet = Theme(
     json={
         'attrs': {
-            'Figure': {
-                'background_fill_color': '#2F2F2F',
-                'border_fill_color': '#2F2F2F',
-                'outline_line_color': '#444444',
+            'figure': {
+                'background_fill_color': 'darkgrey',
+                'background_fill_alpha':0.6,
+                'border_fill_color': 'white',
+                'outline_line_color': 'white',
             },
             'Grid': {
-                'grid_line_dash': [6, 4],
-                'grid_line_alpha': .3,
+                'grid_line_color': 'white',
+                'grid_line_alpha': 0.2,
             },
             'Axis': {
-                'axis_line_color': "white",
-                'major_tick_line_color': "white",
-                'minor_tick_line_color': "white",
-                'major_label_text_color': "white",
-                'minor_label_text_color': "white",
+                'axis_line_color': 'white',
+                'major_tick_line_color': 'red',
+                'minor_tick_line_color': '#D9E1E6',
+                'axis_label_text_color': 'darkgrey',
+                'axis_label_text_font': 'Verdana',
+                'axis_label_text_font_size': '12pt',
+                'major_label_text_color': 'darkgrey',
+                'major_label_text_font': 'Verdana'
             },
             'Legend': {
-                'background_fill_color': '#2F2F2F',
-                'border_line_color': '#444444',
-                'label_text_color': "white",
-                'glyph_height': 20,
-                'spacing': 5,
-                'glyph_width': 20,
-                'label_text_font_size': '12pt',
-                'border_line_width': 1,
+                'background_fill_color': '#F0F2F6',
+                'border_line_color': '#FFFFFF',
+                'label_text_color': '#555555',
+                'label_text_font': 'Verdana',
+                'label_text_font_size': '10pt',
+            },
+            'Title': {
+                'text_color': '#555555',
+                'text_font': 'Verdana',
+                'text_font_size': '14pt',
             }
         }
     }
 )
 
-
-
 curdoc().theme = theme_projet
+
 #################  Présentation de notre projet ---
 
-pres = Div(text = """
-<h1> Présentation de notre projet </h1>
+titre = Div(text = """<h1> Présentation de notre projet </h1>""")
+
+pres = Div(text ="""
 <p> Ce cours a pour but de montrer comment intégrer du code html</p>
-<a href="http://www.univ-rennes2.fr ">Un lien vers le site de l'Université</a>""")
+<p> Lors de notre étude, nous avons choisi d'étudier le tourisme et les activités en Bretagne. </p>
+<p> Nous avons décider de nous focaliser sur 3 thèmes importants :
+<ul>
+    <li> L'activité des différents ports concernant les départs en ferries et en croisières </li>
+    <li> Les petites cités de caractères </li>
+    <li> Les fêtes et manifestations </li>
+</ul>
+<p> Ces sujets nous ont semblé pertinents à étudier car ils concentrent les activités intéressantes et ludiques en Bretagne. </p>""")
+
+lien = Div(text= """<p> <a href="http://www.univ-rennes2.fr ">Un lien vers le site de l'Université</a>  </p>""")
+
+
+auteures = Div(text = """
+        <h2> Auteures du projet </h2>
+        <ul>
+            <li> Marie Guibert </li> 
+            <li> Oriane Duclos </li>
+        </ul>""")
+
+img = Div(text="""<img src="saint-malo.jpg" width="600"/>""")
+
+layout_pres = column(titre,lien, row(pres,img))
 
 ################# Importations des bases de données ---
 pd.set_option("display.max_columns",19) # pour afficher tout 
@@ -127,7 +154,7 @@ df_cites = analyse_cites(data_cites)
 # print(df_cites.head())
 # print(df_cites.describe())
 
-### Importation base de donnée fetes et manifestation 
+### Importation base de donnée fetes et manifestations
 
 with open('bretagne-fetes-et-manifestations.json') as mon_fichier:
     data_fete = json.load(mon_fichier)    
@@ -147,7 +174,7 @@ df_croisieres["Date"] = pd.to_datetime(df_croisieres["Date"]).dt.year
 # On groupe par port et par année et on somme le nombre de passagers pour réaliser le graphique
 df_croisieres = df_croisieres.groupby(["Port","Date"],as_index=False)
 df_croisieres = df_croisieres.agg({"Nb_passagers":sum})
-print(df_croisieres)
+# print(df_croisieres)
 
 # Créer une source de données pour le graphique
 source_croisieres = ColumnDataSource(df_croisieres)
@@ -180,8 +207,8 @@ source_fete = ColumnDataSource(df_fete)
 ##################### Widgets ---
 # Graphique croisieres
 # Créer des widgets colorPickers pour chaque courbe
-colorpicker_roscoff = ColorPicker(title='Couleur de la courbe Roscoff', color='blue')
-colorpicker_saint_malo = ColorPicker(title='Couleur de la courbe Saint-Malo', color='red')
+colorpicker_roscoff = ColorPicker(title='Couleur de la courbe Roscoff', color='#393b79')
+colorpicker_saint_malo = ColorPicker(title='Couleur de la courbe Saint-Malo', color='#6b6ecf')
 
 # Carte des cites de caractère
 hover_tool = HoverTool(tooltips=[('Commune', '@Commune')])
@@ -193,8 +220,8 @@ hover_tool = HoverTool(tooltips=[('Commune', '@Commune')])
 
 #####  Graphique ferries
 ports = df_croisieres["Port"].unique()
-palette_couleurs = CategoricalColorMapper(factors=ports, palette=Spectral[3])
-g_crois = figure(title = "Répartition du nombre de passagers dans les croisières en Bretagne",
+palette_couleurs = CategoricalColorMapper(factors=ports, palette=Category20b[3])
+g_crois = figure(title = "Répartition du nombre de passagers \ndans les croisières en Bretagne",
                  y_axis_label='Nombre de passagers')
 g_crois.vbar(x = "Date",top = "Nb_passagers",fill_color = {'field': 'Port', 'transform': palette_couleurs}, line_color = None, source = source_croisieres,
              width = 0.5, legend_field = "Port")
@@ -241,10 +268,19 @@ p.legend.background_fill_alpha = 0.2
 # Afficher le graphique et les widgets colorPickers
 # show(row(p, column(colorpicker_roscoff, colorpicker_saint_malo)))
 
+## Table croisières 
+columns = [
+          TableColumn(field="Port", title="Nom du port"),
+        TableColumn(field="Date", title="Date"),
+        TableColumn(field="Nb_passagers", title="Nombre de passagers")  
+    ]
+data_table_croisieres = DataTable(source=source_croisieres, columns=columns, width=400, height=280)
+
+
 #### Carte petites cités de caractères 
 carte_cites = figure(x_axis_type="mercator", y_axis_type="mercator", title="Petites cités de caractère en Bretagne")
 carte_cites.add_tile("CartoDB Positron")
-points = carte_cites.circle("x","y",source=source_cites,line_color = None,fill_color='purple',size=10,alpha=0.5)
+points = carte_cites.circle("x","y",source=source_cites,line_color = None,fill_color='#9c9ede',size=30)
 carte_cites.add_tools(hover_tool)
 
 picker_cites = ColorPicker(title="Couleur de ligne",color=points.glyph.fill_color) 
@@ -259,7 +295,7 @@ layout_cites = row(carte_cites, column(picker_cites,spinner_cites))
 
 carte_fete = figure(x_axis_type="mercator", y_axis_type="mercator", title="Lieux de manifestations et de fêtes")
 carte_fete.add_tile("CartoDB Positron")
-carte_fete.circle("x","y",source=source_fete,color=factor_cmap('tarif', palette=Category20[len(type_tarif)], factors=type_tarif),size=8, alpha = 0.5)
+carte_fete.circle("x","y",source=source_fete,color=factor_cmap('tarif', palette=['#393b79','#6b6ecf','#9c9ede'], factors=type_tarif),size=8, alpha = 0.5)
 
 # Ajout des informations de survol pour les icônes de fête
 hover_fete = HoverTool(
@@ -274,11 +310,11 @@ carte_fete.add_tools(hover_fete)
 
 #################  Création des onglets ---
 
-tab1 = TabPanel(child = pres,title = "Présentation")
-tab2 = TabPanel(child=g_crois, title="Croisières")
+tab1 = TabPanel(child = layout_pres,title = "Présentation")
+tab2 = TabPanel(child= row(g_crois,data_table_croisieres), title="Croisières")
 tab3 = TabPanel(child=row(p,column(colorpicker_roscoff, colorpicker_saint_malo)), title="Ferries")
 tab4 = TabPanel(child = layout_cites, title = "Cités de caractère")
-tab5 = TabPanel(child = carte_fete, title = "Fetes et manifestation")
+tab5 = TabPanel(child = carte_fete, title = "Fêtes et manifestations")
 
 tabs = Tabs(tabs= [tab1,tab2,tab3,tab4,tab5])
 show(tabs)
