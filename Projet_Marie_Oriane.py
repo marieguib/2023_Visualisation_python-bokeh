@@ -4,12 +4,13 @@ import numpy as np
 import json
 from bokeh.plotting import figure,show
 from bokeh.models import ColumnDataSource, Spinner, ColorPicker, CustomJS, NumeralTickFormatter,CategoricalColorMapper,HoverTool
-from bokeh.models import TabPanel, Tabs, Div,DataTable,TableColumn
+from bokeh.models import TabPanel, Tabs, Div,DataTable,TableColumn, Paragraph
 from bokeh.layouts import row, column,Column
 from bokeh.palettes import Category20b,Category20
 from bokeh.transform import factor_cmap
 from bokeh.themes import Theme
 from bokeh.io import curdoc
+from PIL import Image
 
 ################# Fonctions ---
 
@@ -194,7 +195,7 @@ source = ColumnDataSource(df)
 
 ###### Modification cites
 source_cites = ColumnDataSource(df_cites)
-# print(source.column_names)
+# print(source_cites.column_names)
 
 ###### Modification fetes 
 #print(df_fete.columns)
@@ -218,7 +219,7 @@ hover_tool = HoverTool(tooltips=[('Commune', '@Commune')])
 
 ###################### Graphiques ---
 
-#####  Graphique ferries
+#####  Graphique croissiere
 ports = df_croisieres["Port"].unique()
 palette_couleurs = CategoricalColorMapper(factors=ports, palette=Category20b[3])
 g_crois = figure(title = "Répartition du nombre de passagers \ndans les croisières en Bretagne",
@@ -227,7 +228,11 @@ g_crois.vbar(x = "Date",top = "Nb_passagers",fill_color = {'field': 'Port', 'tra
              width = 0.5, legend_field = "Port")
 # show(g_crois)
 
-#### Graphique croisieres 
+outilsurvol3 = HoverTool(tooltips=[( "Nb de passager",'@Nb_passagers')])
+g_crois.add_tools(outilsurvol3)
+
+
+#### Graphique feries
 # Créer une figure
 p = figure(title='Trafic des ferries en Bretagne', x_axis_type='datetime')
 
@@ -264,6 +269,22 @@ p.legend.border_line_color = "red"
 p.legend.border_line_alpha = 0.8
 p.legend.background_fill_color = "red"
 p.legend.background_fill_alpha = 0.2
+
+# Créer l'outil HoverTool
+hover_ferries = HoverTool(
+    tooltips=[
+        ('Date', '@Date{%Y-%m}'),
+        ('Nombre de passagers', '@{Nombre de passagers}{0,0}'),
+    ],
+    formatters={
+        'Date': 'datetime', # Formater la date au format 'YYYY-MM-DD'
+        'Nombre de passagers': 'printf', # Formater le nombre de passagers avec des virgules
+    },
+    mode='vline', # Afficher une ligne verticale sur le point survolé
+)
+
+# Ajouter l'outil HoverTool à la figure
+p.add_tools(hover_ferries)
 
 # Afficher le graphique et les widgets colorPickers
 # show(row(p, column(colorpicker_roscoff, colorpicker_saint_malo)))
@@ -308,13 +329,26 @@ carte_fete.add_tools(hover_fete)
 # Affichage de la carte
 #show(carte_fete)
 
+########## Texte 
+
+div2 = Div(text=""" <h1> Graphique n°2 </h1> <p> Ce graphique vous montre le trafic des ferries en Bretagne de 2017 à 2022. On y voit en phénomène de saisonnalité. On suppose qu'il y a beaucoup de trafic l'été et moins l'hiver. On peut voir un trafic reste inexistant durant la periode du Covid-19 en 2020-2021 </p>""",styles={'text-align':'justify','color':'black','background-color':'lavender','padding':'15px','border-radius':'10px'})
+par2 = Div(text="Ces widgets permettent de choisir la couleur des 2 ports.",styles={'text-align':'justify','color':'black','background-color':'papayawhip','padding':'15px','border-radius':'10px'})
+
+par1 = Div(text="Ces widgets permettent de choisir la couleur des pop-up qui matérialisent la repartition du nombre de passegrs sur les différents ports",styles={'text-align':'justify','color':'black','background-color':'papayawhip','padding':'15px','border-radius':'10px'})
+div1 = Div(text=""" <h1> Graphique n°1 </h1> <p> Ce diagramme en barre nous montre la répartition du nombre de passgers dans les croisières en Bretagne, ici vous voyez les 3 principaux ports de bretagne Brest, Lorient, Saint Malo. De plus, à votre droite vous pouvez "naviguez" dans la base de donnée &#160;</p>""",styles={'text-align':'justify','color':'black','background-color':'lavender','padding':'15px','border-radius':'10px'})
+
+div3 = Div(text=""" <h1> Carte n°1 </h1> <p> Cette carte représente les petites cités de caractère en Bretagne. A vous de trouvez votre futur destination de vacances ! &#160;</p>""",styles={'text-align':'justify','color':'black','background-color':'lavender','padding':'15px','border-radius':'10px'}) 
+
+div4 = Div(text=""" <h1> Carte n°2 </h1> <p> Cette carte représente les lieux de manifestions et de fêtes de la bretagne. Les différentes couleurs représentent le type de tarif de l'évenement (payant, gratuit, libre et non communiqué</p>""",styles={'text-align':'justify','color':'black','background-color':'lavender','padding':'15px','border-radius':'10px'})
+
+
 #################  Création des onglets ---
 
 tab1 = TabPanel(child = layout_pres,title = "Présentation")
-tab2 = TabPanel(child= row(g_crois,data_table_croisieres), title="Croisières")
-tab3 = TabPanel(child=row(p,column(colorpicker_roscoff, colorpicker_saint_malo)), title="Ferries")
-tab4 = TabPanel(child = layout_cites, title = "Cités de caractère")
-tab5 = TabPanel(child = carte_fete, title = "Fêtes et manifestations")
+tab2 = TabPanel(child= column(div1,row(g_crois,column(par1,data_table_croisieres))), title="Croisières")
+tab3 = TabPanel(child=column(div2,row(p,column(par2,colorpicker_roscoff, colorpicker_saint_malo))), title="Ferries")
+tab4 = TabPanel(child = column(div3, row(layout_cites)), title = "Cités de caractère")
+tab5 = TabPanel(child = column(div4, row(carte_fete)), title = "Fêtes et manifestations")
 
 tabs = Tabs(tabs= [tab1,tab2,tab3,tab4,tab5])
 show(tabs)
