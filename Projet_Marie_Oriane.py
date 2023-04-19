@@ -2,9 +2,10 @@ import pandas as pd
 from pandas import DataFrame
 import numpy as np
 import json
+from datetime import datetime
 from bokeh.plotting import figure,show
 from bokeh.models import ColumnDataSource, Spinner, ColorPicker, CustomJS, NumeralTickFormatter,CategoricalColorMapper,HoverTool
-from bokeh.models import TabPanel, Tabs, Div,DataTable,TableColumn, Paragraph
+from bokeh.models import TabPanel, Tabs, Div,DataTable,TableColumn, Paragraph, Slider
 from bokeh.layouts import row, column,Column
 from bokeh.palettes import Category20b,Category20
 from bokeh.transform import factor_cmap
@@ -12,7 +13,9 @@ from bokeh.themes import Theme
 from bokeh.io import curdoc
 from PIL import Image
 
-################# Fonctions ---
+#######################################################################################################################
+############################################## Créations de fonctions #################################################
+#######################################################################################################################
 
 def coor_wgs84_to_web_mercator(lon, lat):
     k = 6378137
@@ -58,7 +61,9 @@ def analyse_fete(data):
 
     df = DataFrame({ 'lieu': lieu, 'tarif': tarif,'type': type,'x': coordsx, 'y': coordsy})
     return df
-#################  Création du thème du projet ---
+#######################################################################################################################
+######################################### Création du thème du projet #################################################
+#######################################################################################################################
 
 theme_projet = Theme(
     json={
@@ -105,9 +110,11 @@ theme_projet = Theme(
 
 curdoc().theme = theme_projet
 
-#################  Présentation de notre projet ---
+#######################################################################################################################
+############################################## Présentation du projet #################################################
+#######################################################################################################################
 
-titre = Div(text = """<h1> Présentation de notre projet </h1>""")
+titre = Div(text = """<h1> Présentation de notre projet </h1>""",styles = {"color":"darkblue"})
 
 pres = Div(text ="""
 <p> Ce cours a pour but de montrer comment intégrer du code html</p>
@@ -121,6 +128,7 @@ pres = Div(text ="""
 <p> Ces sujets nous ont semblé pertinents à étudier car ils concentrent les activités intéressantes et ludiques en Bretagne. </p>""")
 
 lien = Div(text= """<p> <a href=https://data.bretagne.bzh/ ">Un lien vers le site de nos bases de données</a>  </p>""")
+lien_git = Div(text= """<p> <a href=https://github.com/marieguib/Projet_visualisation_python.git">Un lien vers le github du projet</a>  </p>""")
 
 
 auteures = Div(text = """
@@ -132,7 +140,7 @@ auteures = Div(text = """
 
 img = Div(text="""<img src="saint-malo.jpg" width="600"/>""")
 
-layout_pres = column(titre,lien, row(pres,img))
+layout_pres = column(titre,lien, lien_git, row(pres,img))
 
 #######################################################################################################################
 ######################################### Importations des bases de données ###########################################
@@ -207,7 +215,7 @@ source_cites = ColumnDataSource(df_cites)
 
 ### Modification fetes ---
 # On récupère les noms de colonnes
-#print(df_fete.columns)
+# print(df_fete.columns)
 # On observe les différentes modalités de la colonne 'tarif'
 #print(df_fete['tarif'].unique())
 # On créé ensuite la liste des modalités :
@@ -233,11 +241,9 @@ outilsurvol3 = HoverTool(tooltips=[( "Nb de passager",'@Nb_passagers')])
 # Création d'un outil de survol qui affiche la date et le nombre de passagers
 hover_ferries = HoverTool(
     tooltips=[
-        ('Date', '@Date{%Y-%m}'),
         ('Nombre de passagers', '@{Nombre de passagers}{0,0}'),
     ],
     formatters={
-        'Date': 'datetime', # Formater la date au format 'YYYY-MM-DD'
         'Nombre de passagers': 'printf', # Formater le nombre de passagers avec des virgules
     },
     mode='vline', # Afficher une ligne verticale sur le point survolé
@@ -307,6 +313,10 @@ p.legend.title = ' 2 Ports'
 # Configuration de l'axe des ordonnées
 p.yaxis.formatter = NumeralTickFormatter(format='0,0')
 
+# Ajout d'un arrière plan dans le graphique
+url = "https://static.vecteezy.com/ti/vecteur-libre/t2/15181418-icone-de-navire-avant-style-de-contour-vectoriel.jpg"
+arriere_plan = Div(text = '<div style="position: absolute; left:100px; top:20px"><img src=' + url + ' style="width:560px; height:560px; opacity: 0.2"></div>')
+
 # Créer une fonction de callback pour mettre à jour la couleur de la courbe Roscoff lorsque l'utilisateur sélectionne une couleur spécifique de courbe voulue
 callback_roscoff = CustomJS(args=dict(p=p_roscoff, colorpicker=colorpicker_roscoff), code="""
     p.glyph.line_color = colorpicker.color;
@@ -332,24 +342,26 @@ layout_ferries = row(p, column(colorpicker_roscoff, colorpicker_saint_malo))
 ### Carte petites cités de caractères  ---
 # Création de la figure 
 carte_cites = figure(x_axis_type="mercator", y_axis_type="mercator", title="Petites cités de caractère en Bretagne")
-carte_cites.add_tile("CartoDB Positron")
+carte_cites.add_tile("OSM")
 
 # Ajout de cercles pour chaque cité de caractère
 points = carte_cites.circle("x","y",source=source_cites,line_color = None,fill_color='#9c9ede',size=30) # on initialise la taille des cercles à 30 
 
 # Création de widgets
 picker_cites = ColorPicker(title="Couleur de ligne",color=points.glyph.fill_color)  #règle la couleur des cercles
-spinner_cites = Spinner(title="Taille des cercles", low=0,high=60, step=5, value=points.glyph.size) #règle la taille des cercles
+# spinner_cites = Spinner(title="Taille des cercles", low=0,high=60, step=5, value=points.glyph.size) #règle la taille des cercles
+slider_cites = Slider(start = 5, end = 100, value = 30, step = 5, title= "Taille des cercles")
 # Créer une fonction de callback pour mettre à jour la couleur et la taille
 picker_cites.js_link('color', points.glyph, 'fill_color')
-spinner_cites.js_link("value", points.glyph, "size") 
+# spinner_cites.js_link("value", points.glyph, "size") 
+slider_cites.js_link("value", points.glyph, "size") 
 
 # Ajout des widgets
 carte_cites.add_tools(hover_tool)
 
 # Affichage 
-layout_cites = row(carte_cites, column(picker_cites,spinner_cites))
-# show(layout)
+# layout_cites = row(carte_cites, column(picker_cites,spinner_cites))
+# show(layout_cites)
 
 ### Carte fetes et manifs ---
 # Création de la figure
@@ -376,7 +388,6 @@ div2 = Div(text=""" <h1> Graphique n°2 </h1>
 par2 = Div(text="Ces widgets permettent de choisir la couleur des 2 ports :",styles={'text-align':'justify','color':'black','background-color':'papayawhip','padding':'15px','border-radius':'10px'})
 
 ### Commentaire graphique croisières ---
-par1 = Div(text="Ces widgets permettent de choisir la couleur des pop-ups qui matérialisent la repartition du nombre de passagers sur les différents ports",styles={'text-align':'justify','color':'black','background-color':'papayawhip','padding':'15px','border-radius':'10px'})
 div1 = Div(text=""" <h1> Graphique n°1 </h1> 
         <p> Ce diagramme en barre nous montre la répartition du nombre de passagers dans les croisières en Bretagne. \n 
         Ici vous voyez les 3 principaux ports de Bretagne :
@@ -388,6 +399,7 @@ div1 = Div(text=""" <h1> Graphique n°1 </h1>
         De plus, à votre droite vous pouvez "naviguez" dans la base de données &#160;</p>""",styles={'text-align':'justify','color':'black','background-color':'lavender','padding':'15px','border-radius':'10px'})
 
 ### Commentaire carte petites cités de caractères ---
+par3 = Div(text="Ces widgets permettent de choisir la couleur des pop-ups qui matérialisent la répartition du nombre de passagers sur les différents ports",styles={'text-align':'justify','color':'black','background-color':'papayawhip','padding':'15px','border-radius':'10px'})
 div3 = Div(text=""" <h1> Carte n°1 </h1> 
         <p> Cette carte représente les petites cités de caractère en Bretagne. \n
         A vous de trouver votre future destination de vacances ! &#160;</p>""",styles={'text-align':'justify','color':'black','background-color':'lavender','padding':'15px','border-radius':'10px'}) 
@@ -402,15 +414,16 @@ div4 = Div(text=""" <h1> Carte n°2 </h1>
 ########################################### Création des onglets ######################################################
 #######################################################################################################################
 
-tab1 = TabPanel(child = layout_pres,title = "Présentation")
-tab2 = TabPanel(child= column(div1,row(g_crois,column(par1,data_table_croisieres))), title="Croisières")
-tab3 = TabPanel(child=column(div2,row(p,column(par2,colorpicker_roscoff, colorpicker_saint_malo))), title="Ferries")
-tab4 = TabPanel(child = column(div3, row(layout_cites)), title = "Cités de caractère")
+# tab1 = TabPanel(child = layout_pres,title = "Présentation")
+tab2 = TabPanel(child= column(div1,row(g_crois,column(data_table_croisieres))), title="Croisières")
+tab3 = TabPanel(child=column(div2,row(p,arriere_plan,column(par2,colorpicker_roscoff, colorpicker_saint_malo))), title="Ferries")
+# tab4 = TabPanel(child = column(div3, row(carte_cites, column(par3,picker_cites,spinner_cites))), title = "Cités de caractère")
+tab4 = TabPanel(child = column(div3, row(carte_cites, column(par3,picker_cites,slider_cites))), title = "Cités de caractère")
 tab5 = TabPanel(child = column(div4, row(carte_fete)), title = "Fêtes et manifestations")
-tabs = Tabs(tabs= [tab1,tab2,tab3,tab4,tab5])
+tabs = Tabs(tabs= [tab2,tab3,tab4,tab5])
 
 #######################################################################################################################
 ################################################ Affichage final ######################################################
 #######################################################################################################################
 
-show(tabs)
+show(column(layout_pres,tabs))
