@@ -5,7 +5,7 @@ import json
 from datetime import datetime
 from bokeh.plotting import figure,show
 from bokeh.models import ColumnDataSource, Spinner, ColorPicker, CustomJS, NumeralTickFormatter,CategoricalColorMapper,HoverTool
-from bokeh.models import TabPanel, Tabs, Div,DataTable,TableColumn, Paragraph, Slider
+from bokeh.models import TabPanel, Tabs, Div,DataTable,TableColumn, Paragraph, Slider, Dropdown
 from bokeh.layouts import row, column,Column
 from bokeh.palettes import Category20b,Category20
 from bokeh.transform import factor_cmap
@@ -116,6 +116,8 @@ curdoc().theme = theme_projet
 
 titre = Div(text = """<h1> Présentation de notre projet </h1>""",styles = {"color":"darkblue"})
 
+nous = Div(text = """<h2> Duclos Oriane & Guibert Marie </h2>""",styles = {"color":"lightblue"})
+
 pres = Div(text ="""
 <p> Ce cours a pour but de montrer comment intégrer du code html</p>
 <p> Lors de notre étude, nous avons choisi d'étudier le tourisme et les activités en Bretagne. </p>
@@ -140,7 +142,9 @@ auteures = Div(text = """
 
 img = Div(text="""<img src="saint-malo.jpg" width="600"/>""")
 
-layout_pres = column(titre,lien, lien_git, row(pres,img))
+titre2 = Div(text = """<h1> Le tourisme en Bretagne </h1>""",styles = {"color":"darkblue"})
+
+layout_pres = row(column(titre,nous,lien,lien_git, pres,titre2),img)
 
 #######################################################################################################################
 ######################################### Importations des bases de données ###########################################
@@ -224,14 +228,20 @@ type_tarif = ['Tarifs non communiqués', 'Payant', 'Gratuit', 'Libre participati
 # Créer une source de données pour le graphique
 source_fete = ColumnDataSource(df_fete)
 
-df_fete2 = df_fete.copy() # copie pour ne pas que ça groupe pour la carte
-compte = df_fete2.groupby(['tarif']).size()
-df_fete2['counts']= compte
-#Creation du data source 
+df_tarifs = pd.read_csv("bretagne-fetes-et-manifestations.csv",sep=";")
+df_tarifs = df_tarifs.rename(columns = {"SyndicObjectID":"ID",
+                                        "Published":"Date",
+                                        "SyndicObjectName":"Nom",
+                                        "GmapLatitude" : "Latitude",
+                                        "GmapLongitude" : "Longitude",
+                                        "DetailIDENTADRESSECP" :"CP",
+                                        "DetailIDENTADRESSECOMMUNE" : "Commune",
+                                        "TARIFENTREE" : "Tarifs"})
 
-source_tarifs = ColumnDataSource(data =df_fete2 )
+Compte = df_tarifs.groupby(["Tarifs"]).size()
 
-
+# Création du datasource
+source_tarifs = ColumnDataSource(data = dict(x = type_tarif, counts = Compte, color = Category20b[4]))
 
 
 #######################################################################################################################
@@ -271,9 +281,10 @@ hover_fete = HoverTool(
 
 ### Type de tarif graphique ---
 hover_tarifs = HoverTool(
-    tooltips=[('compte', '@counts')],
+    tooltips=[('Compte', '@counts')],
     mode='mouse'
 )
+
 
 
 #######################################################################################################################
@@ -397,8 +408,9 @@ t = figure(title = "Nombre d'évènements rangés par tarifs",
             y_axis_label= "Nombre d'évènements")
 
 t.vbar( x = 'x',  top = 'counts', source = source_tarifs, color = 'color')
-t.add_tools(hover_tarifs)
 
+# Ajout des widgets
+t.add_tools(hover_tarifs)
 
 
 #######################################################################################################################
@@ -429,7 +441,7 @@ div3 = Div(text=""" <h1> Carte n°1 </h1>
         A vous de trouver votre future destination de vacances ! &#160;</p>""",styles={'text-align':'justify','color':'black','background-color':'lavender','padding':'15px','border-radius':'10px'}) 
 
 ### Commentaire carte lieux de fêtes et manifestations ---
-div4 = Div(text=""" <h1> Carte n°2 </h1> 
+div4 = Div(text=""" <h1> Carte n°2 et Graphique n°3</h1> 
         <p> Cette carte représente les lieux de manifestations et de fêtes de la Bretagne. \n
         Les différentes couleurs représentent le type de tarif de l'évenement (payant, gratuit, libre et non communiqué)</p>""",styles={'text-align':'justify','color':'black','background-color':'lavender','padding':'15px','border-radius':'10px'})
 
@@ -451,4 +463,3 @@ tabs = Tabs(tabs= [tab2,tab3,tab4,tab5])
 #######################################################################################################################
 
 show(column(layout_pres,tabs))
-
