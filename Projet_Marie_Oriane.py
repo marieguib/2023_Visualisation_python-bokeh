@@ -128,7 +128,7 @@ pres = Div(text ="""
 <p> Ces sujets nous ont semblé pertinents à étudier car ils concentrent les activités intéressantes et ludiques en Bretagne. </p>""")
 
 lien = Div(text= """<p> <a href=https://data.bretagne.bzh/ ">Un lien vers le site de nos bases de données</a>  </p>""")
-lien_git = Div(text= """<p> <a href=https://github.com/marieguib/Projet_visualisation_python.git">Un lien vers le github du projet</a>  </p>""")
+lien_git = Div(text= """<p> <a href=https://github.com/marieguib/Projet_visualisation_python/">Un lien vers le github du projet</a>  </p>""")
 
 
 auteures = Div(text = """
@@ -224,6 +224,15 @@ type_tarif = ['Tarifs non communiqués', 'Payant', 'Gratuit', 'Libre participati
 # Créer une source de données pour le graphique
 source_fete = ColumnDataSource(df_fete)
 
+df_fete2 = df_fete.copy() # copie pour ne pas que ça groupe pour la carte
+compte = df_fete2.groupby(['tarif']).size()
+df_fete2['counts']= compte
+#Creation du data source 
+
+source_tarifs = ColumnDataSource(data =df_fete2 )
+
+
+
 
 #######################################################################################################################
 ############################################## Créations de widgets ###################################################
@@ -259,10 +268,12 @@ hover_fete = HoverTool(
     tooltips=[('Lieu', '@lieu'), ('Tarif', '@tarif'), ('Type', '@type')],
     mode='mouse'
 )
-#######################################################################################################################
-# trouver une image à ajouter quand on survole 
-# lien de la ville à ajouter quand on survole
-#######################################################################################################################
+
+### Type de tarif graphique ---
+hover_tarifs = HoverTool(
+    tooltips=[('compte', '@counts')],
+    mode='mouse'
+)
 
 
 #######################################################################################################################
@@ -374,8 +385,21 @@ carte_fete.circle("x","y",source=source_fete,color=factor_cmap('tarif', palette=
 # Informations de survol pour les icônes de fête 
 carte_fete.add_tools(hover_fete)
 
+
+
 # Affichage de la carte
 # show(carte_fete)
+
+### Graphique tarification  ---
+t = figure(title = "Nombre d'évènements rangés par tarifs",
+            x_range = type_tarif,
+            x_axis_label = "Tarifs",
+            y_axis_label= "Nombre d'évènements")
+
+t.vbar( x = 'x',  top = 'counts', source = source_tarifs, color = 'color')
+t.add_tools(hover_tarifs)
+
+
 
 #######################################################################################################################
 ######################################## Commentaires graphiques ######################################################
@@ -419,7 +443,7 @@ tab2 = TabPanel(child= column(div1,row(g_crois,column(data_table_croisieres))), 
 tab3 = TabPanel(child=column(div2,row(p,arriere_plan,column(par2,colorpicker_roscoff, colorpicker_saint_malo))), title="Ferries")
 # tab4 = TabPanel(child = column(div3, row(carte_cites, column(par3,picker_cites,spinner_cites))), title = "Cités de caractère")
 tab4 = TabPanel(child = column(div3, row(carte_cites, column(par3,picker_cites,slider_cites))), title = "Cités de caractère")
-tab5 = TabPanel(child = column(div4, row(carte_fete)), title = "Fêtes et manifestations")
+tab5 = TabPanel(child = column(div4, row(carte_fete,t)), title = "Fêtes et manifestations")
 tabs = Tabs(tabs= [tab2,tab3,tab4,tab5])
 
 #######################################################################################################################
@@ -427,3 +451,4 @@ tabs = Tabs(tabs= [tab2,tab3,tab4,tab5])
 #######################################################################################################################
 
 show(column(layout_pres,tabs))
+
