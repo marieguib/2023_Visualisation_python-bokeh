@@ -119,7 +119,6 @@ titre = Div(text = """<h1> Présentation de notre projet </h1>""",styles = {"col
 nous = Div(text = """<h2> Duclos Oriane & Guibert Marie </h2>""",styles = {"color":"lightblue"})
 
 pres = Div(text ="""
-<p> Ce cours a pour but de montrer comment intégrer du code html</p>
 <p> Lors de notre étude, nous avons choisi d'étudier le tourisme et les activités en Bretagne. </p>
 <p> Nous avons décider de nous focaliser sur 3 thèmes importants :
 <ul>
@@ -432,18 +431,19 @@ div1 = Div(text=""" <h1> Graphique n°1 </h1>
           <li> Lorient </li>
           <li> Saint Malo </li>
          </ul>
-        De plus, à votre droite vous pouvez "naviguez" dans la base de données &#160;</p>""",styles={'text-align':'justify','color':'black','background-color':'lavender','padding':'15px','border-radius':'10px'})
+        De plus, à votre droite vous pouvez "naviguer" dans la base de données &#160;</p>""",styles={'text-align':'justify','color':'black','background-color':'lavender','padding':'15px','border-radius':'10px'})
 
 ### Commentaire carte petites cités de caractères ---
-par3 = Div(text="Ces widgets permettent de choisir la couleur des pop-ups qui matérialisent la répartition du nombre de passagers sur les différents ports",styles={'text-align':'justify','color':'black','background-color':'papayawhip','padding':'15px','border-radius':'10px'})
+par3 = Div(text="Ces widgets permettent de choisir la couleur des pop-ups qui matérialisent la couleur et la taille des cercles concernant les petites cités de caractère en Bretagne",styles={'text-align':'justify','color':'black','background-color':'papayawhip','padding':'15px','border-radius':'10px'})
 div3 = Div(text=""" <h1> Carte n°1 </h1> 
         <p> Cette carte représente les petites cités de caractère en Bretagne. \n
         A vous de trouver votre future destination de vacances ! &#160;</p>""",styles={'text-align':'justify','color':'black','background-color':'lavender','padding':'15px','border-radius':'10px'}) 
 
 ### Commentaire carte lieux de fêtes et manifestations ---
 div4 = Div(text=""" <h1> Carte n°2 et Graphique n°3</h1> 
-        <p> Cette carte représente les lieux de manifestations et de fêtes de la Bretagne. \n
-        Les différentes couleurs représentent le type de tarif de l'évenement (payant, gratuit, libre et non communiqué)</p>""",styles={'text-align':'justify','color':'black','background-color':'lavender','padding':'15px','border-radius':'10px'})
+        <p> Cette carte représente les lieux de manifestations et de fêtes de la Bretagne. \n</p>
+        <p> N'hésitez pas à regarder les tarifs associés aux évènements qui vous intéressent ! Ils correspondent aux différentes couleurs présentes sur les figures (payant, gratuit, libre et non communiqué) </p>
+        <p> Vous pouvez aussi voir ci-dessous un graphique du nombre d'évènements par type de tarif. </p>""",styles={'text-align':'justify','color':'black','background-color':'lavender','padding':'15px','border-radius':'10px'})
 
 
 #######################################################################################################################
