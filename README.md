@@ -1,5 +1,6 @@
 # 📌 Description  
-Ce projet Python permet d’analyser et de visualiser **des données urbaines** en utilisant **Bokeh** pour générer des graphiques et cartes interactives. Il se base sur des informations géographiques et socio-économiques pour produire des **visualisations dynamiques** des communes et événements locaux.  
+Ce projet Python permet d’analyser et de visualiser **des données de la région Bretagne** en utilisant **Bokeh** pour générer des graphiques et cartes interactives. 
+Il se base sur des informations géographiques et socio-économiques pour produire des **visualisations dynamiques** des communes et événements locaux.  
 
 # 🚀 Fonctionnalités  
 - 🌍 **Conversion des coordonnées GPS** en projection Web Mercator  
